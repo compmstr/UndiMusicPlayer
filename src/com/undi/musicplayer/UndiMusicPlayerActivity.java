@@ -190,11 +190,11 @@ public class UndiMusicPlayerActivity extends Activity {
       switch(response.status.status){
       case PLAYING:
         statusStringB.append("PLAYING: ");
-        statusStringB.append(response.status.file);
+        statusStringB.append(response.status.file.substring(response.status.file.lastIndexOf('/') + 1));
         break;
       case PAUSED:
         statusStringB.append("PAUSED: ");
-        statusStringB.append(response.status.file);
+        statusStringB.append(response.status.file.substring(response.status.file.lastIndexOf('/') + 1));
         break;
       case STOPPED:
         statusStringB.append("STOPPED");
