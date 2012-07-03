@@ -75,7 +75,7 @@ public class MusicPlayerService extends Service{
     @Override
     public MusicPlayerResponse sendCommand(MusicPlayerCommand command)
         throws RemoteException {
-      Log.d("MusicPlayerService", "Got a Command: " + command.message.toString() + " - " + command.data);
+      //Log.d("MusicPlayerService", "Got a Command: " + command.message.toString() + " - " + command.data);
       switch(command.message){
       case GET_STATUS:
         updateStatus();
@@ -109,8 +109,15 @@ public class MusicPlayerService extends Service{
         playFile(playlist[currentFileInPlaylist]);
         return new MusicPlayerResponse(status, "Starting to play file: " + fileToPlay, command.message);
       case PAUSE:
-        pausePlayback();
-        return new MusicPlayerResponse(status, "Paused", command.message);
+        if(status.status == PlayerStatus.PLAYING){
+          pausePlayback();
+          return new MusicPlayerResponse(status, "Paused", command.message);
+        }else if(status.status == PlayerStatus.PAUSED){
+          startPlayback();
+          return new MusicPlayerResponse(status, "Playing", command.message);
+        }else{
+          return new MusicPlayerResponse(status, "Stopped", command.message);
+        }
       case STOP:
         stopPlayback();
         return new MusicPlayerResponse(status, "Stopped", command.message);
@@ -153,6 +160,9 @@ public class MusicPlayerService extends Service{
   };
   
   private void playNextFile(){
+    if(mPlayer == null){
+      return;
+    }
     boolean endOfPlaylist = (this.playlist.length <= (currentFileInPlaylist + 1));
     if(Flag.checkFlag(status.flags, Flag.REPEAT_ONE)){
       playFile(playlist[currentFileInPlaylist]);
@@ -197,6 +207,9 @@ public class MusicPlayerService extends Service{
   }
   
   private void startPlayback(){
+    if(mPlayer == null){
+      return;
+    }
     mPlayer.start();
     if(mPlayer.isPlaying()){
       this.status.status = PlayerStatus.PLAYING;
@@ -206,13 +219,17 @@ public class MusicPlayerService extends Service{
   }
   
   private void stopPlayback(){
-    if(mPlayer.isPlaying()){
-      mPlayer.stop();
-      this.status.status = PlayerStatus.STOPPED;
+    if(mPlayer == null){
+      return;
     }
+    mPlayer.stop();
+    this.status.status = PlayerStatus.STOPPED;
   }
   
   private void pausePlayback(){
+    if(mPlayer == null){
+      return;
+    }
     if(mPlayer.isPlaying()){
       mPlayer.pause();
       this.status.status = PlayerStatus.PAUSED;

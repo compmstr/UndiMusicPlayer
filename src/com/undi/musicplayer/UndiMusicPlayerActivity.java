@@ -21,6 +21,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 //import android.widget.ExpandableListView;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -32,37 +33,10 @@ public class UndiMusicPlayerActivity extends Activity {
     private ServiceConnection musicConn;
     private boolean serviceBound;
     private IUndiMusicCallback musicCommandHandle;
+    private Thread mUpdateThread;
     
-/*    private class IncomingMessageHandler
-    extends Handler{
-      @Override
-      public void handleMessage(Message msg){
-        switch(msg.what){
-        //We got a response from the music player about the status
-        case MusicPlayerService.Message.GET_STATUS:
-          onStatusUpdate((MusicPlayerService.MusicPlayerStatus)msg.getData().getSerializable("status"));
-          break;
-        default:
-          super.handleMessage(msg);
-        }
-      }
-    }*/
-    
-/*    private ServiceConnection musicPlayerServiceConn = new ServiceConnection(){
-      @Override
-      public void onServiceConnected(ComponentName name, IBinder service) {
-        Log.d("musicPlayerServiceConn", "Service Connected");
-      }
-
-      @Override
-      public void onServiceDisconnected(ComponentName name) {
-        Log.d("musicPlayerServiceConn", "Service Disconnected");
-      }    
-    };*/
-    
-    public void onGetStatusClicked(View view){
-      Log.d("UndiMusicPlayerActivity", "Get Status Clicked!");
-      if(this.serviceBound){
+    public void updateStatus(){
+      if(this.serviceBound && musicCommandHandle != null){
         new Thread(new Runnable(){
           public void run(){
             try {
@@ -76,9 +50,12 @@ public class UndiMusicPlayerActivity extends Activity {
             }
           }
         }).start();
-      }else{
-        Log.d("UndiMusicPlayerActivity", "Not connected to service!");
       }
+    }
+    
+    public void onGetStatusClicked(View view){
+      Log.d("UndiMusicPlayerActivity", "Get Status Clicked!");
+      updateStatus();
     }
     
     public void onPlayClicked(View view){
@@ -93,6 +70,7 @@ public class UndiMusicPlayerActivity extends Activity {
             }catch(RemoteException e){
               e.printStackTrace();
             }
+            updateStatus();
           }
         }).start();
       }
@@ -110,6 +88,7 @@ public class UndiMusicPlayerActivity extends Activity {
             }catch(RemoteException e){
               e.printStackTrace();
             }
+            updateStatus();
           }
         }).start();
       }
@@ -127,6 +106,7 @@ public class UndiMusicPlayerActivity extends Activity {
             }catch(RemoteException e){
               e.printStackTrace();
             }
+            updateStatus();
           }
         }).start();
       }
@@ -150,6 +130,7 @@ public class UndiMusicPlayerActivity extends Activity {
               // TODO Auto-generated catch block
               e.printStackTrace();
             }
+            updateStatus();
           }
         }).start();
 
@@ -202,6 +183,20 @@ public class UndiMusicPlayerActivity extends Activity {
             onGetFileListClicked(null);            
           }
         }).start();
+        //Start up the status update loop
+        mUpdateThread = new Thread(new Runnable(){
+          public void run(){
+            while(true){
+              updateStatus();
+              try {
+                Thread.sleep(1000);
+              } catch (InterruptedException e) {
+                return;
+              }
+            }
+          }
+        });
+        mUpdateThread.start();
     }
     
     @Override
@@ -235,6 +230,16 @@ public class UndiMusicPlayerActivity extends Activity {
       //this.stopService(musicServiceIntent);
       if(this.musicConn != null && this.serviceBound){
         this.unbindService(this.musicConn);
+      }
+      Log.d("UndiMusicPlayerActivity", "Stopping update thread...");
+      mUpdateThread.interrupt();
+      try {
+        mUpdateThread.join(2000);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+      if(mUpdateThread.isAlive()){
+        Log.e("UndiMusicPlayerActivity", "Unable to kill update thread");
       }
     }
     
@@ -271,7 +276,7 @@ public class UndiMusicPlayerActivity extends Activity {
       statusStringB.append(status.status.toString());
       statusStringB.append(": ");
       statusStringB.append(status.file.substring(status.file.lastIndexOf('/') + 1));
-      statusStringB.append('\n');
+      statusStringB.append(" -- ");
       statusStringB.append(formatMsTime(status.pos));
       statusStringB.append("/");
       statusStringB.append(formatMsTime(status.duration));
@@ -279,22 +284,39 @@ public class UndiMusicPlayerActivity extends Activity {
     }
     
     private synchronized void onStatusUpdate(MusicPlayerResponse response){
-      Log.d("UndiMusicPlayerActivity", "Got status back: " + response);
-      String statusString = "";
-      switch(response.status.status){
-      case PLAYING:
-      case PAUSED:
-        statusString = fileStatusText(response.status);
-        break;
-      case STOPPED:
-        statusString = "STOPPED";
-        break;
-      }
-      final Context curContext = this;
-      final String finalStatusString = statusString;
+      //Log.d("UndiMusicPlayerActivity", "Got status back: " + response);
+      final MusicPlayerStatus finalStatus = response.status;
       this.runOnUiThread(new Runnable(){
         public void run(){
-          Toast.makeText(curContext, finalStatusString, Toast.LENGTH_SHORT).show();
+          final Button pauseButton = (Button) findViewById(R.id.butPause); 
+          final Button stopButton = (Button) findViewById(R.id.butStop);
+          String statusString = "";
+          switch(finalStatus.status){
+          case PLAYING:
+            statusString = fileStatusText(finalStatus);
+            //Change Play to Pause
+            pauseButton.setEnabled(true);
+            pauseButton.setText(getResources().getString(R.string.pause_button_label));
+            //Enable Stop
+            stopButton.setEnabled(true);
+            break;
+          case PAUSED:
+            statusString = fileStatusText(finalStatus);
+            //Change Pause to Play
+            pauseButton.setEnabled(true);
+            pauseButton.setText(getResources().getString(R.string.play_button_label));
+            //Enable stop
+            stopButton.setEnabled(true);
+            break;
+          case STOPPED:
+            statusString = "STOPPED";
+            //Disable pause and stop
+            pauseButton.setEnabled(false);
+            stopButton.setEnabled(false);
+            break;
+          }
+          TextView txtStatus = (TextView) findViewById(R.id.txtStatus);
+          txtStatus.setText(statusString);
         }
       });
     }
