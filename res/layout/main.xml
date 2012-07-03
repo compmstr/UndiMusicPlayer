@@ -6,26 +6,6 @@
     android:orientation="vertical" >
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
-
-        <Button
-            android:id="@+id/butFileList"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="onGetFileListClicked"
-            android:text="@string/file_list_label" />
-
-        <Button
-            android:id="@+id/butGetStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="onGetStatusClicked"
-            android:text="@string/get_status_label" />
-
-    </LinearLayout>
-
-    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal" >

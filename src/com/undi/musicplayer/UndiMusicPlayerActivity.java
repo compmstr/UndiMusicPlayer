@@ -50,6 +50,21 @@ public class UndiMusicPlayerActivity extends Activity {
             }
           }
         }).start();
+      }else{
+        runOnUiThread(new Runnable(){
+          public void run(){
+            final Button pauseButton = (Button) findViewById(R.id.butPause); 
+            final Button stopButton = (Button) findViewById(R.id.butStop);
+            String statusString = "-Disconnected-";
+            //Change Play to Pause and Disable it
+            pauseButton.setEnabled(false);
+            pauseButton.setText(getResources().getString(R.string.pause_button_label));
+            //Disable Stop
+            stopButton.setEnabled(false);
+            TextView txtStatus = (TextView) findViewById(R.id.txtStatus);
+            txtStatus.setText(statusString);
+          }
+        });
       }
     }
     
@@ -116,8 +131,8 @@ public class UndiMusicPlayerActivity extends Activity {
      * Starts a new thread to run onFileListUpdate with the response from sendCommand
      * @param view
      */
-    public void onGetFileListClicked(View view){
-      Log.d("UndiMusicPlayerActivity", "Get File List Clicked!");
+    public void onUpdateFileList(){
+      Log.d("UndiMusicPlayerActivity", "Update File List Clicked!");
       if(this.serviceBound){
         new Thread(new Runnable(){
           public void run(){
@@ -180,7 +195,7 @@ public class UndiMusicPlayerActivity extends Activity {
                 e.printStackTrace();
               }
             }
-            onGetFileListClicked(null);            
+            onUpdateFileList();            
           }
         }).start();
         //Start up the status update loop
@@ -219,6 +234,8 @@ public class UndiMusicPlayerActivity extends Activity {
         this.unbindService(this.musicConn);
         this.stopService(musicServiceIntent);    
         break;
+      case R.id.menuUpdateFiles:
+        onUpdateFileList();
       }
       return true;
     }

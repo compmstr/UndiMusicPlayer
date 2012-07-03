@@ -2,6 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
     <item android:id="@+id/menuExit" android:title="Exit"></item>
     <item android:id="@+id/menuKillService" android:title="Kill Service"></item>
+    <item android:id="@+id/menuUpdateFiles" android:title="Upd. Files"></item>
     
 
 </menu>
