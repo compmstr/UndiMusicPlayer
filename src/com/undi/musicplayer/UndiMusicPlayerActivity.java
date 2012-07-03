@@ -367,6 +367,8 @@ public class UndiMusicPlayerActivity extends Activity {
      * @param response The response from the music player service
      */
     private synchronized void DisplayFileList(final View mainView, final Context curContext, final MusicPlayerResponse response){
+      //TODO look into SimpleCursorAdapter instead of listadapter:
+      // http://thinkandroid.wordpress.com/2010/01/09/simplecursoradapters-and-listviews/
       Log.d("UndiMusicPlayerActivity", "Got file list: " + response.data); 
       String filesString = response.data;
       String[] rawFiles = filesString.split(";");
