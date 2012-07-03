@@ -81,6 +81,57 @@ public class UndiMusicPlayerActivity extends Activity {
       }
     }
     
+    public void onPlayClicked(View view){
+      if(this.serviceBound){
+        new Thread(new Runnable(){
+          public void run(){
+            try{
+              musicCommandHandle.sendCommand(
+                  new MusicPlayerCommand(
+                      MusicPlayerService.MessageCode.PLAY,
+                      "play"));
+            }catch(RemoteException e){
+              e.printStackTrace();
+            }
+          }
+        }).start();
+      }
+    }
+    
+    public void onPauseClicked(View view){
+      if(this.serviceBound){
+        new Thread(new Runnable(){
+          public void run(){
+            try{
+              musicCommandHandle.sendCommand(
+                  new MusicPlayerCommand(
+                      MusicPlayerService.MessageCode.PAUSE,
+                      "pause"));
+            }catch(RemoteException e){
+              e.printStackTrace();
+            }
+          }
+        }).start();
+      }
+    }
+    
+    public void onStopClicked(View view){
+      if(this.serviceBound){
+        new Thread(new Runnable(){
+          public void run(){
+            try{
+              musicCommandHandle.sendCommand(
+                  new MusicPlayerCommand(
+                      MusicPlayerService.MessageCode.STOP,
+                      "stop"));
+            }catch(RemoteException e){
+              e.printStackTrace();
+            }
+          }
+        }).start();
+      }
+    }
+    
     /**
      * Starts a new thread to run onFileListUpdate with the response from sendCommand
      * @param view
@@ -222,7 +273,7 @@ public class UndiMusicPlayerActivity extends Activity {
       statusStringB.append(status.file.substring(status.file.lastIndexOf('/') + 1));
       statusStringB.append('\n');
       statusStringB.append(formatMsTime(status.pos));
-      statusStringB.append(" of ");
+      statusStringB.append("/");
       statusStringB.append(formatMsTime(status.duration));
       return statusStringB.toString();
     }
@@ -299,7 +350,6 @@ public class UndiMusicPlayerActivity extends Activity {
       ArrayAdapter<String> filesArray = new ArrayAdapter<String>(curContext, android.R.layout.simple_list_item_1, files);
       fileList.setAdapter(filesArray);
       fileList.setOnItemClickListener(new OnItemClickListener(){
-
         @Override
         public void onItemClick(AdapterView<?> list, View v, int position,
             long id) {

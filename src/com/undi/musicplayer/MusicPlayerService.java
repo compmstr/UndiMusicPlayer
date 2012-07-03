@@ -25,12 +25,13 @@ import android.widget.Toast;
 public class MusicPlayerService extends Service{
   public static enum MessageCode{
     GET_FILE_LIST, GET_PLAYLISTS, GET_STATUS,
-    PLAY_FILE, PAUSE, RESTART, PREV, NEXT, SHUFFLE, REPEAT_ONE, REPEAT_ALL,
+    PLAY_FILE, PLAY_PLAYLIST, PLAY, PAUSE, STOP, RESTART, PREV, NEXT, SHUFFLE, REPEAT_ONE, REPEAT_ALL,
     ERROR;
   };
   public static enum PlayerStatus{
     PLAYING, PAUSED, STOPPED
   }
+  public final static String MUSICDIR = "media/audio";
   
   public static class Flag{
     public final static int SHUFFLE = 0x1;
@@ -107,6 +108,15 @@ public class MusicPlayerService extends Service{
         currentFileInPlaylist = 0;
         playFile(playlist[currentFileInPlaylist]);
         return new MusicPlayerResponse(status, "Starting to play file: " + fileToPlay, command.message);
+      case PAUSE:
+        pausePlayback();
+        return new MusicPlayerResponse(status, "Paused", command.message);
+      case STOP:
+        stopPlayback();
+        return new MusicPlayerResponse(status, "Stopped", command.message);
+      case PLAY:
+        startPlayback();
+        return new MusicPlayerResponse(status, "Playing", command.message);
       }
       return null;
     }
@@ -303,7 +313,7 @@ public class MusicPlayerService extends Service{
     File musicDir;
     if(sdCard.isDirectory()){
       Log.d("MusicPlayerService", "SD Card Path: " + sdCard.getAbsolutePath());
-      musicDir = new File(sdCard.getAbsolutePath() + "/Music/");
+      musicDir = new File(sdCard.getAbsolutePath() + "/" + MUSICDIR + "/");
       this.musicFiles = musicDir.listFiles(new FileFilter(){
         private final String[] extensions = 
           new String[] {"mp3", "ogg", "wav", "mid", "midi", "3gp"};

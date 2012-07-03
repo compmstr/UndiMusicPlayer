@@ -7,5 +7,8 @@
     <string name="musicplayer_service_stopped">UndiMusic Player Service Stopped</string>
     <string name="file_list_label">Get FileList</string>
     <string name="get_status_label">Get Status</string>
+    <string name="play_button_label">Play</string>
+    <string name="pause_button_label">Pause</string>
+    <string name="stop_button_label">Stop</string>
 
 </resources>
