@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, UndiMusicPlayerActivity!</string>
+    <string name="app_name">UndiMusicPlayer</string>
+    <string name="musicplayer_service_started">UndiMusic Player Service Started</string>
+    <string name="musicplayer_service_stopped">UndiMusic Player Service Stopped</string>
+    <string name="file_list_label">Get FileList</string>
+    <string name="get_status_label">Get Status</string>
+
+</resources>
