@@ -21,6 +21,7 @@ import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class UndiMusicPlayerActivity extends Activity {
     /** Called when the activity is first created. */
@@ -185,6 +186,27 @@ public class UndiMusicPlayerActivity extends Activity {
     
     private synchronized void onStatusUpdate(MusicPlayerResponse response){
       Log.d("UndiMusicPlayerActivity", "Got status back: " + response);
+      StringBuilder statusStringB = new StringBuilder();
+      switch(response.status.status){
+      case PLAYING:
+        statusStringB.append("PLAYING: ");
+        statusStringB.append(response.status.file);
+        break;
+      case PAUSED:
+        statusStringB.append("PAUSED: ");
+        statusStringB.append(response.status.file);
+        break;
+      case STOPPED:
+        statusStringB.append("STOPPED");
+        break;
+      }
+      final String statusString = statusStringB.toString();
+      final Context curContext = this;
+      this.runOnUiThread(new Runnable(){
+        public void run(){
+          Toast.makeText(curContext, statusString, Toast.LENGTH_SHORT).show();
+        }
+      });
     }
     
     private synchronized void onPlayFileUpdate(MusicPlayerResponse response){
@@ -200,7 +222,8 @@ public class UndiMusicPlayerActivity extends Activity {
     private void onFileListUpdate(final MusicPlayerResponse response){
       final View mainView = findViewById(R.id.viewMainView);
       final Context curContext = this;
-      mainView.post(new Runnable(){
+      //You can also use mainView.post(...
+      this.runOnUiThread(new Runnable(){
         public void run(){
           DisplayFileList(mainView, curContext, response);
         }
