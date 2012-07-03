@@ -1,6 +1,9 @@
 package com.undi.musicplayer;
 
 //import android.R.integer;
+import com.undi.musicplayer.MusicPlayerService.MusicPlayerStatus;
+import com.undi.musicplayer.MusicPlayerService.PlayerStatus;
+
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
@@ -184,27 +187,63 @@ public class UndiMusicPlayerActivity extends Activity {
       }
     }
     
+    /**
+     * Returns a time in HH:MM:SS from milliseconds
+     *    If there are less than 60 minutes, HH: is left out
+     * @param time
+     * @return
+     */
+    private String formatMsTime(int time){
+      int seconds = time / 1000;
+      int minutes = seconds / 60;
+      int hours = minutes / 60;
+      
+      StringBuilder sb = new StringBuilder();
+      if(hours != 0){
+        sb.append(hours);
+        sb.append(':');
+      }
+      if(minutes < 10){
+        sb.append('0');
+      }
+      sb.append(minutes % 60);
+      sb.append(':');
+      if(seconds < 10){
+        sb.append('0');
+      }
+      sb.append(seconds % 60);
+      return sb.toString();
+    }
+    
+    private String fileStatusText(MusicPlayerStatus status){
+      StringBuilder statusStringB = new StringBuilder();
+      statusStringB.append(status.status.toString());
+      statusStringB.append(": ");
+      statusStringB.append(status.file.substring(status.file.lastIndexOf('/') + 1));
+      statusStringB.append('\n');
+      statusStringB.append(formatMsTime(status.pos));
+      statusStringB.append(" of ");
+      statusStringB.append(formatMsTime(status.duration));
+      return statusStringB.toString();
+    }
+    
     private synchronized void onStatusUpdate(MusicPlayerResponse response){
       Log.d("UndiMusicPlayerActivity", "Got status back: " + response);
-      StringBuilder statusStringB = new StringBuilder();
+      String statusString = "";
       switch(response.status.status){
       case PLAYING:
-        statusStringB.append("PLAYING: ");
-        statusStringB.append(response.status.file.substring(response.status.file.lastIndexOf('/') + 1));
-        break;
       case PAUSED:
-        statusStringB.append("PAUSED: ");
-        statusStringB.append(response.status.file.substring(response.status.file.lastIndexOf('/') + 1));
+        statusString = fileStatusText(response.status);
         break;
       case STOPPED:
-        statusStringB.append("STOPPED");
+        statusString = "STOPPED";
         break;
       }
-      final String statusString = statusStringB.toString();
       final Context curContext = this;
+      final String finalStatusString = statusString;
       this.runOnUiThread(new Runnable(){
         public void run(){
-          Toast.makeText(curContext, statusString, Toast.LENGTH_SHORT).show();
+          Toast.makeText(curContext, finalStatusString, Toast.LENGTH_SHORT).show();
         }
       });
     }

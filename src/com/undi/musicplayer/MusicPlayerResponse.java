@@ -32,6 +32,8 @@ implements Parcelable{
     dest.writeInt(this.status.status.ordinal());
     dest.writeString(this.status.file);
     dest.writeInt(this.status.flags);
+    dest.writeInt(this.status.pos);
+    dest.writeInt(this.status.duration);
     //data
     dest.writeString(this.data);
     //message ordinal
@@ -39,7 +41,11 @@ implements Parcelable{
   }
   
   MusicPlayerResponse(Parcel in){
-    this.status = new MusicPlayerService.MusicPlayerStatus(PlayerStatus.values()[in.readInt()], in.readString(), in.readInt());
+    this.status = new MusicPlayerService.MusicPlayerStatus(PlayerStatus.values()[in.readInt()],
+        //file, flags
+        in.readString(), in.readInt(),
+        //position, duration
+        in.readInt(), in.readInt());
     this.data = in.readString();
     this.message = MusicPlayerService.MessageCode.values()[in.readInt()];
   }

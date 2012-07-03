@@ -77,6 +77,7 @@ public class MusicPlayerService extends Service{
       Log.d("MusicPlayerService", "Got a Command: " + command.message.toString() + " - " + command.data);
       switch(command.message){
       case GET_STATUS:
+        updateStatus();
         return new MusicPlayerResponse(status, "Here's your Status", command.message);
       case GET_FILE_LIST:
         StringBuilder fileList = new StringBuilder();
@@ -111,6 +112,16 @@ public class MusicPlayerService extends Service{
     }
     
   };
+
+  private void updateStatus(){
+    if(mPlayer == null){
+      return;
+    }
+    if(mPlayer.isPlaying()){
+      this.status.pos = mPlayer.getCurrentPosition();
+      this.status.duration = mPlayer.getDuration();
+    }
+  }
   
   private MediaPlayer.OnErrorListener mediaPlayerError = new MediaPlayer.OnErrorListener() {  
     @Override
@@ -225,14 +236,27 @@ public class MusicPlayerService extends Service{
     //An or'd list of bit flags
     public int flags;
     
+    /**
+     * Position we're at in the stream
+     */
+    public int pos;
+    /**
+     * Total size of the stream
+     */
+    public int duration;
+    
     public String toString(){
-      return "[MusicPlayerStatus - " + status + " : " + (file == "" ? "[No File]" : file) + " --Flags: " + flags + "]";
+      return "[MusicPlayerStatus - " + status + " : " + (file == "" ? "[No File]" : file) +
+      " --Position: " + this.pos + ":" + this.duration +
+      " --Flags: " + flags + "]";
     }
     
-    public MusicPlayerStatus(PlayerStatus status, String file, int flags){
+    public MusicPlayerStatus(PlayerStatus status, String file, int flags, int pos, int duration){
       this.status = status;
       this.file = file;
       this.flags = flags;
+      this.pos = pos;
+      this.duration = duration;
     }
   }
 
@@ -302,7 +326,7 @@ public class MusicPlayerService extends Service{
   @Override
   public void onStart(Intent intent, int startid){
     this.getFileList();
-    this.status = new MusicPlayerStatus(PlayerStatus.STOPPED, "", 0);
+    this.status = new MusicPlayerStatus(PlayerStatus.STOPPED, "", 0, 0, 0);
   }
   
   public void showNotification(){
