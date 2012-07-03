@@ -2,6 +2,7 @@ package com.undi.musicplayer;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.io.Serializable;
 
 import android.app.Notification;
@@ -12,6 +13,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.MediaPlayer;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
@@ -30,16 +32,28 @@ public class MusicPlayerService extends Service{
     PLAYING, PAUSED, STOPPED
   }
   
-  public static enum Flag{
-    SHUFFLE(0x1), REPEAT_ONE(0x2), REPEAT_ALL(0x4);
-    private final int value;
-    Flag(int i){
-      this.value = i;
+  public static class Flag{
+    public final static int SHUFFLE = 0x1;
+    public final static int REPEAT_ONE = 0x2;
+    public final static int REPEAT_ALL =0x4;
+    
+    public static boolean checkFlag(int value, int flag){
+      return ((value & flag) != 0);
     }
-    public int getValue() { return this.value; }
+    
+    public static int setFlag(int value, int flag){
+      return (value | flag);
+    }
+    public static int clearFlag(int value, int flag){
+      return (value & ~flag);
+    }
   };
   
   private File[] musicFiles;
+  private String[] playlist;
+  private int currentFileInPlaylist;
+  
+  private MediaPlayer mPlayer = null;
   
   //private String status;
   private MusicPlayerStatus status;
@@ -87,7 +101,10 @@ public class MusicPlayerService extends Service{
         if(fileToPlay == null){
           return new MusicPlayerResponse(status, "Error: Can't find file: " + fileRequested, MessageCode.ERROR);
         }
-        playFile(fileToPlay);
+        playlist = new String[1];
+        playlist[0] = fileToPlay;
+        currentFileInPlaylist = 0;
+        playFile(playlist[currentFileInPlaylist]);
         return new MusicPlayerResponse(status, "Starting to play file: " + fileToPlay, command.message);
       }
       return null;
@@ -95,9 +112,90 @@ public class MusicPlayerService extends Service{
     
   };
   
+  private MediaPlayer.OnErrorListener mediaPlayerError = new MediaPlayer.OnErrorListener() {  
+    @Override
+    public boolean onError(MediaPlayer mp, int what, int extra) {
+      if(what == MediaPlayer.MEDIA_ERROR_SERVER_DIED){
+        Log.e("MusicPlayerService", "Connection to audio player died");
+        mPlayer = null;
+      }
+      mPlayer = null;
+      return false;
+    }
+  };
+  
+  private MediaPlayer.OnCompletionListener mediaPlayerFinished = new MediaPlayer.OnCompletionListener() {   
+    @Override
+    public void onCompletion(MediaPlayer mp) {
+      playNextFile();
+    }
+  };
+  
+  private void playNextFile(){
+    boolean endOfPlaylist = (this.playlist.length <= (currentFileInPlaylist + 1));
+    if(Flag.checkFlag(status.flags, Flag.REPEAT_ONE)){
+      playFile(playlist[currentFileInPlaylist]);
+      return;
+    }
+    if(endOfPlaylist){
+      if(Flag.checkFlag(this.status.flags, Flag.REPEAT_ALL)){
+        currentFileInPlaylist = 0;
+        playFile(playlist[0]);
+        return;
+      }else{
+        this.status.status = PlayerStatus.STOPPED;
+        this.status.file = "";
+        mPlayer.reset();
+      }
+    }else{
+      currentFileInPlaylist++;
+      playFile(playlist[currentFileInPlaylist]);
+      return;
+    }
+  }
+  
   private void playFile(String fileToPlay){
     this.status.file = fileToPlay;
-    this.status.status = PlayerStatus.PLAYING;
+    if(mPlayer == null){
+      mPlayer = new MediaPlayer();
+      mPlayer.setOnErrorListener(mediaPlayerError);
+      mPlayer.setOnCompletionListener(mediaPlayerFinished);
+    }
+    mPlayer.reset();
+    try {
+      mPlayer.setDataSource(fileToPlay);
+      mPlayer.prepare();
+    } catch (IllegalArgumentException e) {
+      e.printStackTrace();
+    } catch (IllegalStateException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    startPlayback();
+  }
+  
+  private void startPlayback(){
+    mPlayer.start();
+    if(mPlayer.isPlaying()){
+      this.status.status = PlayerStatus.PLAYING;
+    }else{
+      this.status.status = PlayerStatus.STOPPED;
+    }
+  }
+  
+  private void stopPlayback(){
+    if(mPlayer.isPlaying()){
+      mPlayer.stop();
+      this.status.status = PlayerStatus.STOPPED;
+    }
+  }
+  
+  private void pausePlayback(){
+    if(mPlayer.isPlaying()){
+      mPlayer.pause();
+      this.status.status = PlayerStatus.PAUSED;
+    }
   }
   
   @Override
@@ -168,6 +266,10 @@ public class MusicPlayerService extends Service{
     mNM.cancel(R.string.musicplayer_service_started);
     //Tell the user we stopped
     Toast.makeText(this, R.string.musicplayer_service_stopped, Toast.LENGTH_SHORT).show();
+    if(mPlayer.isPlaying()){
+      mPlayer.stop();
+    }
+    mPlayer.release();
   }
 
   private void getFileList(){
