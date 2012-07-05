@@ -33,26 +33,8 @@ public class MusicPlayerService extends Service{
   }
   public final static String MUSICDIR = "media/audio";
   
-  public static class Flag{
-    public final static int SHUFFLE = 0x1;
-    public final static int REPEAT_ONE = 0x2;
-    public final static int REPEAT_ALL =0x4;
-    
-    public static boolean checkFlag(int value, int flag){
-      return ((value & flag) != 0);
-    }
-    
-    public static int setFlag(int value, int flag){
-      return (value | flag);
-    }
-    public static int clearFlag(int value, int flag){
-      return (value & ~flag);
-    }
-  };
-  
   private File[] musicFiles;
-  private String[] playlist;
-  private int currentFileInPlaylist;
+  private Playlist mPlaylist = null;
   
   private MediaPlayer mPlayer = null;
   
@@ -91,23 +73,7 @@ public class MusicPlayerService extends Service{
         }
         return new MusicPlayerResponse(status, fileList.toString(), command.message);
       case PLAY_FILE:
-        String fileRequested = command.data;
-        Log.d("MusicPlayerService", "File requested to play: " + fileRequested);
-        String fileToPlay = null;
-        for(File file : musicFiles){
-          if(file.getName().equals(fileRequested)){
-            fileToPlay = file.getAbsolutePath();
-            break;
-          }
-        }
-        if(fileToPlay == null){
-          return new MusicPlayerResponse(status, "Error: Can't find file: " + fileRequested, MessageCode.ERROR);
-        }
-        playlist = new String[1];
-        playlist[0] = fileToPlay;
-        currentFileInPlaylist = 0;
-        playFile(playlist[currentFileInPlaylist]);
-        return new MusicPlayerResponse(status, "Starting to play file: " + fileToPlay, command.message);
+        return onPlayFile(command);
       case PAUSE:
         if(status.status == PlayerStatus.PLAYING){
           pausePlayback();
@@ -129,6 +95,25 @@ public class MusicPlayerService extends Service{
     }
     
   };
+  
+  private MusicPlayerResponse onPlayFile(MusicPlayerCommand command){
+    String fileRequested = command.data;
+    Log.d("MusicPlayerService", "File requested to play: " + fileRequested);
+    String fileToPlay = null;
+    for(File file : musicFiles){
+      if(file.getName().equals(fileRequested)){
+        fileToPlay = file.getAbsolutePath();
+        break;
+      }
+    }
+    if(fileToPlay == null){
+      return new MusicPlayerResponse(status, "Error: Can't find file: " + fileRequested, MessageCode.ERROR);
+    }
+    mPlaylist = new Playlist();
+    mPlaylist.addFile(fileRequested);
+    //playFile(playlist[currentFileInPlaylist]);
+    return new MusicPlayerResponse(status, "Starting to play file: " + fileToPlay, command.message);
+  }
 
   private void updateStatus(){
     if(mPlayer == null){
@@ -163,25 +148,13 @@ public class MusicPlayerService extends Service{
     if(mPlayer == null){
       return;
     }
-    boolean endOfPlaylist = (this.playlist.length <= (currentFileInPlaylist + 1));
-    if(Flag.checkFlag(status.flags, Flag.REPEAT_ONE)){
-      playFile(playlist[currentFileInPlaylist]);
-      return;
-    }
-    if(endOfPlaylist){
-      if(Flag.checkFlag(this.status.flags, Flag.REPEAT_ALL)){
-        currentFileInPlaylist = 0;
-        playFile(playlist[0]);
-        return;
-      }else{
-        this.status.status = PlayerStatus.STOPPED;
-        this.status.file = "";
-        mPlayer.reset();
-      }
+    String nextFileToPlay = mPlaylist.nextFile();
+    if(nextFileToPlay == ""){
+      this.status.status = PlayerStatus.STOPPED;
+      this.status.file = "";
+      mPlayer.reset();
     }else{
-      currentFileInPlaylist++;
-      playFile(playlist[currentFileInPlaylist]);
-      return;
+      playFile(nextFileToPlay);
     }
   }
   
