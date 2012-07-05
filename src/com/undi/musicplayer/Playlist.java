@@ -37,6 +37,7 @@ public class Playlist {
   public Playlist(Vector<String> files, int flags){
     this.files = files;
     this.flags = flags;
+    this.currentFile = -1;
   }
   public void setFlags(int flags){
     this.flags = flags;

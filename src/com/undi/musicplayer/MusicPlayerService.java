@@ -110,8 +110,9 @@ public class MusicPlayerService extends Service{
       return new MusicPlayerResponse(status, "Error: Can't find file: " + fileRequested, MessageCode.ERROR);
     }
     mPlaylist = new Playlist();
-    mPlaylist.addFile(fileRequested);
+    mPlaylist.addFile(fileToPlay);
     //playFile(playlist[currentFileInPlaylist]);
+    playFile(mPlaylist.nextFile());
     return new MusicPlayerResponse(status, "Starting to play file: " + fileToPlay, command.message);
   }
 
